@@ -32,9 +32,22 @@ class MumbleMPD
 			@mpd.play
 		end
  
+		@cli.on_udp_tunnel do |udp|
+            		@lastaudio = Time.now
+        	end				
+        	
 		begin
+			@lastaudio = Time.now
 			t = Thread.new do
-				gets
+				# This implements ducking Bot when others speak
+				while (true==true)
+					sleep 0.02
+					if ((Time.now - @ lastaudio) < 0.1) then
+						@cli.player.volume = 40
+					else
+						@cli.player.volume = 100
+					end
+				end
 			end
  
 			t.join
