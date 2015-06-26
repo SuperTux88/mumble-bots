@@ -1,71 +1,51 @@
 #!/usr/bin/env ruby
  
 require "mumble-ruby"
-require 'rubygems'
-require 'librmpd'
-require 'thread'
+require "eventmachine"
+require "ruby-mpd"
  
 class MumbleMPD
  
 	def initialize
-		@sv_art
-		@sv_alb
-		@sv_tit
- 
-		@mpd = MPD.new
+		@mpd = MPD.new "localhost", 6600, callbacks: true
  
 		@cli = Mumble::Client.new("mumble.coding4coffee.org", "64738", "music-bot", "")
- 
-		@mpd.register_callback( self.method('song_cb'), MPD::CURRENT_SONG_CALLBACK )
 	end
  
 	def start
 		@cli.connect
 		sleep(1)
-		#@cli.join_channel("weltraum")
-		#sleep(1)
-		@cli.stream_raw_audio('/var/lib/mpd/tmp/mpd.fifo')
- 
-		@mpd.connect true
+		@cli.player.stream_named_pipe('/var/lib/mpd/tmp/mpd.fifo')
+
+		add_mpd_callbacks
+
+		@mpd.connect
  
 		if @mpd.stopped?
 			@mpd.play
 		end
- 
-		@cli.on_udp_tunnel do |udp|
-            		@lastaudio = Time.now
-        	end				
-        	
-		begin
-			@lastaudio = Time.now
-			t = Thread.new do
-				# This implements ducking Bot when others speak
-				while (true==true)
-					sleep 0.02
-					if ((Time.now - @ lastaudio) < 0.1) then
-						@cli.player.volume = 40
-					else
-						@cli.player.volume = 100
-					end
-				end
-			end
- 
-			t.join
-		rescue Interrupt => e
-		end
 	end
  
-	def song_cb( current )
-		if not current.nil?
-			if not @sv_art == current.artist && @sv_alb == current.album && @sv_tit == current.title
-				@sv_art = current.artist
-				@sv_alb = current.album
-				@sv_tit = current.title
-				@cli.text_channel(@cli.current_channel, "MPD: #{current.artist} - #{current.title} (#{current.album})")
+	def add_mpd_callbacks
+		@mpd.on :playlistlength do |length|
+			if length < 2
+				playlist = MPD::Playlist.new @mpd, "playlist"
+				playlist.load
+			end
+		end
+
+		@mpd.on :song do |song|
+			if !song.nil? && !(@sv_art == song.artist && @sv_alb == song.album && @sv_tit == song.title)
+				@sv_art = song.artist
+				@sv_alb = song.album
+				@sv_tit = song.title
+				@cli.text_channel(@cli.me.current_channel, "MPD: #{"#{song.artist} - " if song.artist}#{song.title}#{" (#{song.album})" if song.album}")
 			end
 		end
 	end
 end
- 
-client = MumbleMPD.new
-client.start
+
+EventMachine.run do
+	client = MumbleMPD.new
+	client.start
+end
