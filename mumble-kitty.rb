@@ -7,6 +7,9 @@ require "rubygems"
 require "thread"
 
 CONFIG = {
+  general: {
+    triggers: (ENV["KITTY_TRIGGERS"] || "catnip,flausch,keks,minze").split(",")
+  },
   mpd: {
     host: ENV["KITTY_MPD_HOST"] || "localhost",
     port: (ENV["KITTY_MPD_PORT"] || "6604").to_i,
@@ -48,6 +51,14 @@ class MumbleMPD
     end
 
     @mpd.connect
+
+    @cli.on_text_message do |msg|
+      text = msg.message.downcase
+      if CONFIG[:general][:triggers].any? {|trigger| text.include?(trigger)}
+        puts "#{Time.new.ctime}: Received trigger message, following sender!"
+        @cli.join_channel(@cli.users[msg.actor].channel_id)
+      end
+    end
 
     begin
       running = true
