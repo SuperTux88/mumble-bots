@@ -41,7 +41,11 @@ class MumbleMPD
     sleep(1)
     @cli.join_channel(CONFIG[:mumble][:channel])
     sleep(1)
-    @cli.stream_raw_audio(CONFIG[:mpd][:fifo])
+    if @cli.player and @cli.player.respond_to? :stream_named_pipe
+      @cli.player.stream_named_pipe(CONFIG[:mpd][:fifo])
+    else
+      @cli.stream_raw_audio(CONFIG[:mpd][:fifo])
+    end
 
     @mpd.connect
 
@@ -53,7 +57,7 @@ class MumbleMPD
           12.times do
             channels = @cli.channels.values
             newChannel = channels[rand(channels.length)]
-            puts Time.new.ctime + ": " + newChannel.name
+            puts "#{Time.new.ctime}: #{newChannel.name}"
             @cli.join_channel(newChannel)
             5.times do
               @mpd.play()
@@ -61,14 +65,14 @@ class MumbleMPD
             end
           end
           if rand(2) > 0
-            puts Time.new.ctime + ": sleep in katzenkörbchen"
+            puts "#{Time.new.ctime}: sleep in #{CONFIG[:mumble][:channel]}"
             @cli.join_channel(CONFIG[:mumble][:channel])
             24.times do
               @mpd.play()
               sleep(300)
             end
           else
-            puts Time.new.ctime + ": sleep"
+            puts "#{Time.new.ctime}: sleep"
             sleep(7200)
           end
         end
