@@ -35,7 +35,7 @@ class MumbleMPD
       user = @users[msg.session] ||= {name: msg.name}
 
       if @cli.me && @cli.me.session != msg.session
-        if @cli.me && msg.channel_id == @cli.me.channel_id
+        if msg.channel_id == @cli.me.channel_id
           send_to_telegram(@users[msg.session][:name], "Joined channel #{@cli.me.current_channel.name}")
         elsif user[:channel_id] == @cli.me.channel_id
           send_to_telegram(@users[msg.session][:name], "Left channel #{@cli.me.current_channel.name}")
