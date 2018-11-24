@@ -36,9 +36,9 @@ class MumbleMPD
 
       if @cli.me && @cli.me.session != msg.session
         if msg.channel_id == @cli.me.channel_id
-          send_to_telegram(@users[msg.session][:name], "Joined channel #{@cli.me.current_channel.name}")
+          send_join_leave_message(@users[msg.session][:name], "Joined channel #{@cli.me.current_channel.name}")
         elsif user[:channel_id] == @cli.me.channel_id && msg.channel_id && user[:channel_id] != msg.channel_id
-          send_to_telegram(@users[msg.session][:name], "Left channel #{@cli.me.current_channel.name}")
+          send_join_leave_message(@users[msg.session][:name], "Left channel #{@cli.me.current_channel.name}")
         end
       end
 
@@ -47,7 +47,7 @@ class MumbleMPD
 
     @cli.on_user_remove do |msg|
       user = @users.delete(msg.session)
-      send_to_telegram(user[:name], "Disconnected") if user[:channel_id] == @cli.me.channel_id
+      send_join_leave_message(user[:name], "Disconnected") if user[:channel_id] == @cli.me.channel_id
     end
 
     @cli.connect
@@ -69,12 +69,16 @@ class MumbleMPD
     @telegram_url ||= "https://api.telegram.org/bot#{CONFIG[:telegram][:bot_token]}"
   end
 
-  def send_to_telegram(name, text)
+  def send_join_leave_message(name, text)
+    send_to_telegram(name, text, {disable_notification: true})
+  end
+
+  def send_to_telegram(name, text, additional_params={})
       params = {
         chat_id: CONFIG[:telegram][:chat_id],
         text: "<b>#{name}:</b> #{text}",
         parse_mode: "HTML"
-      }
+      }.merge(additional_params)
       puts "Sending to Telegram: #{params.inspect}"
       RestClient.post("#{telegram_url}/sendMessage", params, format: :json)
       puts "... done."
