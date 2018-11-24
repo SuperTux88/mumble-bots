@@ -2,6 +2,7 @@
 
 require "mumble-ruby"
 require "restclient"
+require "open-uri"
 require "eventmachine"
 require "json"
 require "twitter-text"
@@ -70,6 +71,13 @@ class MumbleMPD
     RestClient.post("https://api.telegram.org/bot#{CONFIG[:telegram][:bot_token]}/#{method}", params, format: :json)
   end
 
+  def telegram_download_file(path)
+    download = open("https://api.telegram.org/file/bot#{CONFIG[:telegram][:bot_token]}/#{path}")
+    "/tmp/telegram-#{path.gsub("/", "-")}".tap do |target_filename|
+      IO.copy_stream(download, target_filename)
+    end
+  end
+
   def send_join_leave_message(text)
     send_to_telegram(text, {disable_notification: true})
   end
@@ -96,14 +104,32 @@ class MumbleMPD
       message = data["message"]
       puts "Received message: #{message}"
 
-      next unless message["chat"]["id"] == CONFIG[:telegram][:chat_id] && message["text"]
-      text = Twitter::TwitterText::Autolink.auto_link_urls(message["text"], suppress_no_follow: true)
-      @cli.text_channel(@cli.me.current_channel, "<b>#{telegram_name(message["from"])}</b>: #{text}")
+      next unless message["chat"]["id"] == CONFIG[:telegram][:chat_id]
+
+      if message["text"]
+        text = Twitter::TwitterText::Autolink.auto_link_urls(message["text"], suppress_no_follow: true)
+        @cli.text_channel(@cli.me.current_channel, "<b>#{telegram_name(message["from"])}</b>: #{text}")
+      elsif message["voice"]
+        play_voice(message["voice"])
+      end
     end
   end
 
   def telegram_name(from)
     "#{from["first_name"]} #{from["last_name"]}".strip
+  end
+
+  def play_voice(voice)
+    response = JSON.parse(telegram_api("getFile", {file_id: voice["file_id"]}))
+    return unless response["ok"]
+
+    downloaded_file = telegram_download_file(response["result"]["file_path"])
+
+    return unless system("ffmpeg -i #{downloaded_file} -ac 1 -ar 48000 -acodec pcm_s16le -y /tmp/telegram-voice.wav")
+    File.delete(downloaded_file) if File.exist?(downloaded_file)
+
+    @cli.player.play_file("/tmp/telegram-voice.wav")
+    sleep(voice["duration"] + 1)
   end
 end
 
