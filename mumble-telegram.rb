@@ -46,8 +46,8 @@ class MumbleMPD
     end
 
     @cli.on_user_remove do |msg|
-      send_to_telegram(@users[msg.session][:name], "Disconnected")
-      @users.delete(msg.session)
+      user = @users.delete(msg.session)
+      send_to_telegram(user[:name], "Disconnected") if user[:channel_id] == @cli.me.channel_id
     end
 
     @cli.connect
