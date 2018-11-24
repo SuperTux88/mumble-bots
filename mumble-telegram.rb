@@ -37,12 +37,12 @@ class MumbleMPD
       if @cli.me && @cli.me.session != msg.session
         if msg.channel_id == @cli.me.channel_id
           send_to_telegram(@users[msg.session][:name], "Joined channel #{@cli.me.current_channel.name}")
-        elsif user[:channel_id] == @cli.me.channel_id
+        elsif user[:channel_id] == @cli.me.channel_id && msg.channel_id && user[:channel_id] != msg.channel_id
           send_to_telegram(@users[msg.session][:name], "Left channel #{@cli.me.current_channel.name}")
         end
       end
 
-      @users[msg.session][:channel_id] = msg.channel_id
+      @users[msg.session][:channel_id] = msg.channel_id if msg.channel_id
     end
 
     @cli.on_user_remove do |msg|
