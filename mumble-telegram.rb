@@ -36,12 +36,7 @@ class MumbleMPD
 
     @cli.on_text_message do |msg|
       if msg.channel_id.include?(@cli.me.channel_id)
-        params = {
-          chat_id: CONFIG[:telegram][:chat_id],
-          text: "<b>#{@cli.users[msg.actor].name}:</b> #{msg.message}",
-          parse_mode: "HTML"
-        }
-        send_to_telegram(params)
+        send_to_telegram(@cli.users[msg.actor].name, msg.message) unless msg.message.include?("<img ")
       end
     end
 
@@ -54,7 +49,12 @@ class MumbleMPD
     @telegram_url ||= "https://api.telegram.org/bot#{CONFIG[:telegram][:bot_token]}"
   end
 
-  def send_to_telegram(params)
+  def send_to_telegram(name, text)
+      params = {
+        chat_id: CONFIG[:telegram][:chat_id],
+        text: "<b>#{name}:</b> #{text}",
+        parse_mode: "HTML"
+      }
       puts "Sending to Telegram: #{params.inspect}"
       RestClient.post("#{telegram_url}/sendMessage", params, format: :json)
       puts "... done."
