@@ -4,6 +4,7 @@ require "mumble-ruby"
 require "restclient"
 require "eventmachine"
 require "json"
+require "twitter-text"
 
 CONFIG = {
   mumble: {
@@ -93,8 +94,9 @@ class MumbleMPD
     response["result"].each do |data|
       @update_options[:offset] = data["update_id"].next
       puts "Received message: #{data["message"]}"
-      next unless data["message"]["chat"]["id"] == CONFIG[:telegram][:chat_id]
-      @cli.text_channel(@cli.me.current_channel, "<b>#{telegram_name(data["message"]["from"])}</b>: #{data["message"]["text"]}") if data["message"]["text"]
+      next unless data["message"]["chat"]["id"] == CONFIG[:telegram][:chat_id] && data["message"]["text"]
+      text = Twitter::TwitterText::Autolink.auto_link_urls(data["message"]["text"], suppress_no_follow: true)
+      @cli.text_channel(@cli.me.current_channel, "<b>#{telegram_name(data["message"]["from"])}</b>: #{text}")
     end
   end
 
