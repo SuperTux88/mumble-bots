@@ -93,10 +93,12 @@ class MumbleMPD
 
     response["result"].each do |data|
       @update_options[:offset] = data["update_id"].next
-      puts "Received message: #{data["message"]}"
-      next unless data["message"]["chat"]["id"] == CONFIG[:telegram][:chat_id] && data["message"]["text"]
-      text = Twitter::TwitterText::Autolink.auto_link_urls(data["message"]["text"], suppress_no_follow: true)
-      @cli.text_channel(@cli.me.current_channel, "<b>#{telegram_name(data["message"]["from"])}</b>: #{text}")
+      message = data["message"]
+      puts "Received message: #{message}"
+
+      next unless message["chat"]["id"] == CONFIG[:telegram][:chat_id] && message["text"]
+      text = Twitter::TwitterText::Autolink.auto_link_urls(message["text"], suppress_no_follow: true)
+      @cli.text_channel(@cli.me.current_channel, "<b>#{telegram_name(message["from"])}</b>: #{text}")
     end
   end
 
