@@ -36,9 +36,9 @@ class MumbleMPD
 
       if @cli.me && @cli.me.session != msg.session
         if msg.channel_id == @cli.me.channel_id
-          send_join_leave_message(@users[msg.session][:name], "Joined channel #{@cli.me.current_channel.name}")
+          send_join_leave_message("<b>#{@users[msg.session][:name]}</b> joined #{@cli.me.current_channel.name}")
         elsif user[:channel_id] == @cli.me.channel_id && msg.channel_id && user[:channel_id] != msg.channel_id
-          send_join_leave_message(@users[msg.session][:name], "Left channel #{@cli.me.current_channel.name}")
+          send_join_leave_message("<b>#{@users[msg.session][:name]}</b> left #{@cli.me.current_channel.name}")
         end
       end
 
@@ -47,7 +47,7 @@ class MumbleMPD
 
     @cli.on_user_remove do |msg|
       user = @users.delete(msg.session)
-      send_join_leave_message(user[:name], "Disconnected") if user[:channel_id] == @cli.me.channel_id
+      send_join_leave_message("<b>#{user[:name]}</b> disconnected") if user[:channel_id] == @cli.me.channel_id
     end
 
     @cli.connect
@@ -56,7 +56,7 @@ class MumbleMPD
 
     @cli.on_text_message do |msg|
       if msg.channel_id.include?(@cli.me.channel_id)
-        send_to_telegram(@cli.users[msg.actor].name, msg.message) unless msg.message.include?("<img ")
+        send_to_telegram("<b>#{@cli.users[msg.actor].name}:</b> #{msg.message}") unless msg.message.include?("<img ")
       end
     end
 
@@ -69,14 +69,14 @@ class MumbleMPD
     @telegram_url ||= "https://api.telegram.org/bot#{CONFIG[:telegram][:bot_token]}"
   end
 
-  def send_join_leave_message(name, text)
-    send_to_telegram(name, text, {disable_notification: true})
+  def send_join_leave_message(text)
+    send_to_telegram(text, {disable_notification: true})
   end
 
-  def send_to_telegram(name, text, additional_params={})
+  def send_to_telegram(text, additional_params={})
       params = {
         chat_id: CONFIG[:telegram][:chat_id],
-        text: "<b>#{name}:</b> #{text}",
+        text: text,
         parse_mode: "HTML"
       }.merge(additional_params)
       puts "Sending to Telegram: #{params.inspect}"
