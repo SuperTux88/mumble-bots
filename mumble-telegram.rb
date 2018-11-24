@@ -66,8 +66,8 @@ class MumbleMPD
 
   private
 
-  def telegram_url
-    @telegram_url ||= "https://api.telegram.org/bot#{CONFIG[:telegram][:bot_token]}"
+  def telegram_api(method, params)
+    RestClient.post("https://api.telegram.org/bot#{CONFIG[:telegram][:bot_token]}/#{method}", params, format: :json)
   end
 
   def send_join_leave_message(text)
@@ -81,14 +81,14 @@ class MumbleMPD
         parse_mode: "HTML"
       }.merge(additional_params)
       puts "Sending to Telegram: #{params.inspect}"
-      RestClient.post("#{telegram_url}/sendMessage", params, format: :json)
+      telegram_api("sendMessage", params)
       puts "... done."
     rescue SocketError, RestClient::Exception => e
       puts "... Telegram send error: '#{e.inspect}'"
   end
 
   def fetch_updates_from_telegram
-    response = JSON.parse(RestClient.post("#{telegram_url}/getUpdates", @update_options, format: :json))
+    response = JSON.parse(telegram_api("getUpdates", @update_options))
     return unless response["ok"]
 
     response["result"].each do |data|
