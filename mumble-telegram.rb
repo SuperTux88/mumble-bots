@@ -27,9 +27,29 @@ class MumbleMPD
       ""
     )
     @update_options = {offset: 0, timeout: 60}
+    @users = {}
   end
 
   def start
+    @cli.on_user_state do |msg|
+      user = @users[msg.session] ||= {name: msg.name}
+
+      if @cli.me && @cli.me.session != msg.session
+        if @cli.me && msg.channel_id == @cli.me.channel_id
+          send_to_telegram(@users[msg.session][:name], "Joined channel #{@cli.me.current_channel.name}")
+        elsif user[:channel_id] == @cli.me.channel_id
+          send_to_telegram(@users[msg.session][:name], "Left channel #{@cli.me.current_channel.name}")
+        end
+      end
+
+      @users[msg.session][:channel_id] = msg.channel_id
+    end
+
+    @cli.on_user_remove do |msg|
+      send_to_telegram(@users[msg.session][:name], "Disconnected")
+      @users.delete(msg.session)
+    end
+
     @cli.connect
     sleep(1)
     @cli.join_channel(CONFIG[:mumble][:channel])
