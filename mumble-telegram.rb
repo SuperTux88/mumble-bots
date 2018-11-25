@@ -104,9 +104,11 @@ class MumbleMPD
       message = data["message"]
       puts "Received message: #{message}"
 
+      send_list(message["chat"]["id"]) if message["text"] && message["text"].start_with?("/list")
+
       next unless message["chat"]["id"] == CONFIG[:telegram][:chat_id]
 
-      if message["text"]
+      if message["text"] && !message["text"].start_with?("/")
         text = Twitter::TwitterText::Autolink.auto_link_urls(message["text"], suppress_no_follow: true)
         @cli.text_channel(@cli.me.current_channel, "<b>#{telegram_name(message["from"])}</b>: #{text}")
       elsif message["voice"]
@@ -117,6 +119,17 @@ class MumbleMPD
 
   def telegram_name(from)
     "#{from["first_name"]} #{from["last_name"]}".strip
+  end
+
+  def send_list(chat_id)
+    users = @users.values.select {|user| user[:channel_id] == @cli.me.channel_id && user[:name] != CONFIG[:mumble][:username]}
+    if users.any?
+      text = "Users in channel <b>#{@cli.me.current_channel.name}</b>:\n- #{users.map {|user| user[:name]}.join("\n- ")}"
+    else
+      text = "Channel <b>#{@cli.me.current_channel.name}</b> is empty!"
+    end
+
+    send_to_telegram(text, {chat_id: chat_id})
   end
 
   def play_voice(voice)
