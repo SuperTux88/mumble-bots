@@ -20,7 +20,7 @@ CONFIG = {
   }
 }
 
-class MumbleMPD
+class MumbleTelegram
   def initialize
     @cli = Mumble::Client.new(
       CONFIG[:mumble][:host],
@@ -30,6 +30,10 @@ class MumbleMPD
     )
     @update_options = {offset: 0, timeout: 60}
     @users = {}
+  end
+
+  def log(line)
+    puts "[#{Time.now}] #{line}"
   end
 
   def start
@@ -83,16 +87,16 @@ class MumbleMPD
   end
 
   def send_to_telegram(text, additional_params={})
-      params = {
-        chat_id: CONFIG[:telegram][:chat_id],
-        text: text,
-        parse_mode: "HTML"
-      }.merge(additional_params)
-      puts "Sending to Telegram: #{params.inspect}"
-      telegram_api("sendMessage", params)
-      puts "... done."
-    rescue SocketError, RestClient::Exception => e
-      puts "... Telegram send error: '#{e.inspect}'"
+    params = {
+      chat_id: CONFIG[:telegram][:chat_id],
+      text: text,
+      parse_mode: "HTML"
+    }.merge(additional_params)
+    log "Sending to Telegram: #{params.inspect}"
+    telegram_api("sendMessage", params)
+    log "... done."
+  rescue SocketError, RestClient::Exception => e
+    log "... Telegram send error: '#{e.inspect}'"
   end
 
   def fetch_updates_from_telegram
@@ -147,6 +151,6 @@ class MumbleMPD
 end
 
 EventMachine.run do
-  client = MumbleMPD.new
+  client = MumbleTelegram.new
   client.start
 end
