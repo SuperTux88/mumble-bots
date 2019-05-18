@@ -53,7 +53,7 @@ class MumbleTelegram
 
     @cli.on_user_remove do |msg|
       user = @users.delete(msg.session)
-      send_join_leave_message("<b>#{user[:name]}</b> disconnected") if user[:channel_id] == @cli.me.channel_id
+      send_join_leave_message("<b>#{user[:name]}</b> disconnected") if user && user[:channel_id] == @cli.me.channel_id
     end
 
     @cli.connect
@@ -62,7 +62,7 @@ class MumbleTelegram
 
     @cli.on_text_message do |msg|
       if !msg.channel_id || msg.channel_id.include?(@cli.me.channel_id)
-        send_to_telegram("<b>#{@cli.users[msg.actor].name}:</b> #{msg.message}") unless msg.message.include?("<img ")
+        send_to_telegram("<b>#{@cli.users[msg.actor].name}:</b> #{msg.message}") if @cli.users[msg.actor] && !msg.message.include?("<img ")
       end
     end
 
