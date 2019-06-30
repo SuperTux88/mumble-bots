@@ -64,8 +64,9 @@ class MumbleTelegram
     @cli.join_channel(CONFIG[:mumble][:channel])
 
     @cli.on_text_message do |msg|
-      if !msg.channel_id || msg.channel_id.include?(@cli.me.channel_id)
-        send_to_telegram("<b>#{@cli.users[msg.actor].name}:</b> #{msg.message}") if @cli.users[msg.actor] && !msg.message.include?("<img ")
+      if (!msg.channel_id || msg.channel_id.include?(@cli.me.channel_id)) &&
+          @cli.users[msg.actor] && !msg.message.include?("<img ") && !msg.message.start_with?(".")
+        send_to_telegram("<b>#{@cli.users[msg.actor].name}:</b> #{msg.message}")
       end
     end
 
