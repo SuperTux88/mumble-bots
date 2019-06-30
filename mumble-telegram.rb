@@ -12,7 +12,8 @@ CONFIG = {
     host: ENV["MUMBLE_HOST"] || "mumble.coding4.coffee",
     port: (ENV["MUMBLE_PORT"] || "64738").to_i,
     username: ENV["MUMBLE_USERNAME"] || "telegram-bot",
-    channel: ENV["MUMBLE_CHANNEL"] || "weltraum"
+    channel: ENV["MUMBLE_CHANNEL"] || "weltraum",
+    ignored_users: ENV["MUMBLE_IGNORED_USERS"]&.split(",") || ["fluffy"]
   },
   telegram: {
     bot_token: ENV["TELEGRAM_BOT_TOKEN"] || "",
@@ -40,11 +41,11 @@ class MumbleTelegram
     @cli.on_user_state do |msg|
       user = @users[msg.session] ||= {name: msg.name}
 
-      if @cli.me && @cli.me.session != msg.session
+      if @cli.me && @cli.me.session != msg.session && !CONFIG[:mumble][:ignored_users].include?(user[:name])
         if msg.channel_id == @cli.me.channel_id
-          send_join_leave_message("<b>#{@users[msg.session][:name]}</b> joined #{@cli.me.current_channel.name}")
+          send_join_leave_message("<b>#{user[:name]}</b> joined #{@cli.me.current_channel.name}")
         elsif user[:channel_id] == @cli.me.channel_id && msg.channel_id && user[:channel_id] != msg.channel_id
-          send_join_leave_message("<b>#{@users[msg.session][:name]}</b> left #{@cli.me.current_channel.name}")
+          send_join_leave_message("<b>#{user[:name]}</b> left #{@cli.me.current_channel.name}")
         end
       end
 
@@ -53,7 +54,9 @@ class MumbleTelegram
 
     @cli.on_user_remove do |msg|
       user = @users.delete(msg.session)
-      send_join_leave_message("<b>#{user[:name]}</b> disconnected") if user && user[:channel_id] == @cli.me.channel_id
+      if user && user[:channel_id] == @cli.me.channel_id && !CONFIG[:mumble][:ignored_users].include?(user[:name])
+        send_join_leave_message("<b>#{user[:name]}</b> disconnected")
+      end
     end
 
     @cli.connect
@@ -126,7 +129,10 @@ class MumbleTelegram
   end
 
   def send_list(chat_id)
-    users = @users.values.select {|user| user[:channel_id] == @cli.me.channel_id && user[:name] != CONFIG[:mumble][:username]}
+    users = @users.values.select {|user|
+      user[:channel_id] == @cli.me.channel_id && user[:name] != CONFIG[:mumble][:username] &&
+          !CONFIG[:mumble][:ignored_users].include?(user[:name])
+    }
     if users.any?
       text = "Users in channel <b>#{@cli.me.current_channel.name}</b>:\n- #{users.map {|user| user[:name]}.join("\n- ")}"
     else
