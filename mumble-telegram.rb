@@ -1,4 +1,5 @@
 #!/usr/bin/env ruby
+# frozen_string_literal: true
 
 require "mumble-ruby"
 require "restclient"
@@ -19,7 +20,7 @@ CONFIG = {
     bot_token: ENV["TELEGRAM_BOT_TOKEN"] || "",
     chat_id: (ENV["TELEGRAM_CHAT_ID"] || "").to_i
   }
-}
+}.freeze
 
 class MumbleTelegram
   def initialize
@@ -29,7 +30,7 @@ class MumbleTelegram
       CONFIG[:mumble][:username],
       ""
     )
-    @update_options = {offset: 0, timeout: 60}
+    @update_options = { offset: 0, timeout: 60 }
     @users = {}
   end
 
@@ -39,7 +40,7 @@ class MumbleTelegram
 
   def start
     @cli.on_user_state do |msg|
-      user = @users[msg.session] ||= {name: msg.name}
+      user = @users[msg.session] ||= { name: msg.name }
 
       if @cli.me && @cli.me.session != msg.session && !CONFIG[:mumble][:ignored_users].include?(user[:name])
         if msg.channel_id == @cli.me.channel_id
@@ -70,7 +71,7 @@ class MumbleTelegram
       end
     end
 
-    fetch_updates_from_telegram while true
+    loop { fetch_updates_from_telegram }
   end
 
   private
@@ -87,7 +88,7 @@ class MumbleTelegram
   end
 
   def send_join_leave_message(text)
-    send_to_telegram(text, {disable_notification: true})
+    send_to_telegram(text, { disable_notification: true })
   end
 
   def send_to_telegram(text, additional_params={})
@@ -123,6 +124,10 @@ class MumbleTelegram
         play_voice(message["voice"])
       end
     end
+  rescue => e
+    log "... Telegram read error: '#{e.inspect}'"
+    puts "Backtrace:\n\t#{e.backtrace.join("\n\t")}"
+    sleep(1) # don't DoS API if there is a bug in the code
   end
 
   def telegram_name(from)
@@ -140,11 +145,11 @@ class MumbleTelegram
       text = "Channel <b>#{@cli.me.current_channel.name}</b> is empty!"
     end
 
-    send_to_telegram(text, {chat_id: chat_id})
+    send_to_telegram(text, { chat_id: chat_id })
   end
 
   def play_voice(voice)
-    response = JSON.parse(telegram_api("getFile", {file_id: voice["file_id"]}))
+    response = JSON.parse(telegram_api("getFile", { file_id: voice["file_id"] }))
     return unless response["ok"]
 
     downloaded_file = telegram_download_file(response["result"]["file_path"])
