@@ -1,30 +1,29 @@
 #!/usr/bin/env ruby
-# encoding: utf-8
+# frozen_string_literal: true
 
-require "librmpd"
 require "mumble-ruby"
-require "rubygems"
+require "eventmachine"
+require "ruby-mpd"
 require "thread"
 
 CONFIG = {
   general: {
-    triggers: (ENV["KITTY_TRIGGERS"] || "catnip,flausch,keks,minze").split(",")
+    triggers: (ENV["TRIGGERS"] || "catnip,flausch,keks,minze").split(",")
   },
   mpd: {
-    host: ENV["KITTY_MPD_HOST"] || "localhost",
-    port: (ENV["KITTY_MPD_PORT"] || "6604").to_i,
-    fifo: ENV["KITTY_MPD_FIFO"] || "/var/lib/mpd/tmp/kitty.fifo"
+    host: ENV["MPD_HOST"] || "localhost",
+    port: (ENV["MPD_PORT"] || "6604").to_i,
+    fifo: ENV["MPD_FIFO"] || "/var/lib/mpd/tmp/kitty.fifo"
   },
   mumble: {
-    host: ENV["KITTY_MUMBLE_HOST"] || "mumble.coding4coffee.org",
-    port: (ENV["KITTY_MUMBLE_PORT"] || "64738").to_i,
-    username: ENV["KITTY_MUMBLE_USERNAME"] || "fluffy",
-    channel: ENV["KITTY_MUMBLE_CHANNEL"] || "katzenkörbchen"
+    host: ENV["MUMBLE_HOST"] || "mumble.coding4.coffee",
+    port: (ENV["MUMBLE_PORT"] || "64738").to_i,
+    username: ENV["MUMBLE_USERNAME"] || "fluffy",
+    channel: ENV["MUMBLE_CHANNEL"] || "katzenkörbchen"
   }
-}
+}.freeze
 
 class MumbleMPD
-
   def initialize
     @mpd = MPD.new(
       CONFIG[:mpd][:host],
@@ -44,11 +43,7 @@ class MumbleMPD
     sleep(1)
     @cli.join_channel(CONFIG[:mumble][:channel])
     sleep(1)
-    if @cli.player and @cli.player.respond_to? :stream_named_pipe
-      @cli.player.stream_named_pipe(CONFIG[:mpd][:fifo])
-    else
-      @cli.stream_raw_audio(CONFIG[:mpd][:fifo])
-    end
+    @cli.player.stream_named_pipe(CONFIG[:mpd][:fifo])
 
     @mpd.connect
 
@@ -90,17 +85,10 @@ class MumbleMPD
       end
     rescue Interrupt => e
     end
-
-    begin
-      t = Thread.new do
-        gets
-      end
-
-      t.join
-    rescue Interrupt => e
-    end
   end
 end
 
-client = MumbleMPD.new
-client.start
+EventMachine.run do
+  client = MumbleMPD.new
+  client.start
+end
