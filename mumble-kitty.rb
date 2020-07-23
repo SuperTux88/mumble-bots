@@ -49,6 +49,8 @@ class MumbleMPD
     sleep(1)
     @cli.player.stream_named_pipe(CONFIG[:mpd][:fifo])
 
+    add_mpd_callbacks
+
     @mpd.connect
     @mpd.password(CONFIG[:mpd][:password]) if CONFIG[:mpd][:password]
 
@@ -90,6 +92,18 @@ class MumbleMPD
       end
     rescue Interrupt => e
     end
+  end
+
+  def add_mpd_callbacks
+    @mpd.on :connection do |connected|
+      reconnect_mpd unless connected
+    end
+  end
+
+  def reconnect_mpd
+    puts "Reconnecting to MPD ..."
+    @mpd.connect
+    @mpd.password(CONFIG[:mpd][:password]) if CONFIG[:mpd][:password]
   end
 end
 
