@@ -49,8 +49,6 @@ class MumbleMPD
     sleep(1)
     @cli.player.stream_named_pipe(CONFIG[:mpd][:fifo])
 
-    add_mpd_callbacks
-
     @mpd.connect
     @mpd.password(CONFIG[:mpd][:password]) if CONFIG[:mpd][:password]
 
@@ -73,7 +71,7 @@ class MumbleMPD
             puts "#{Time.new.ctime}: #{newChannel.name}"
             @cli.join_channel(newChannel)
             5.times do
-              @mpd.play()
+              play_next
               sleep(60)
             end
           end
@@ -81,7 +79,7 @@ class MumbleMPD
             puts "#{Time.new.ctime}: sleep in #{CONFIG[:mumble][:channel]}"
             @cli.join_channel(CONFIG[:mumble][:channel])
             24.times do
-              @mpd.play()
+              play_next
               sleep(300)
             end
           else
@@ -94,10 +92,14 @@ class MumbleMPD
     end
   end
 
-  def add_mpd_callbacks
-    @mpd.on :connection do |connected|
-      reconnect_mpd unless connected
-    end
+  def play_next
+    @mpd.play
+  rescue MPD::Error => e
+    puts "MPD error: '#{e.inspect}'"
+    puts "Backtrace:\n\t#{e.backtrace.join("\n\t")}"
+    # retry after reconnect
+    reconnect_mpd
+    @mpd.play
   end
 
   def reconnect_mpd
