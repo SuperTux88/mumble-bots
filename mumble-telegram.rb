@@ -11,6 +11,9 @@ require "twitter-text"
 STDOUT.sync = true
 STDERR.sync = true
 
+# compatibility with twitter-text 1.x (debian stable)
+Twitter::TwitterText ||= Twitter
+
 CONFIG = {
   mumble: {
     host: ENV["MUMBLE_HOST"] || "mumble.coding4.coffee",
