@@ -9,6 +9,7 @@ CONFIG = {
   mpd: {
     host: ENV["MPD_HOST"] || "localhost",
     port: (ENV["MPD_PORT"] || "6600").to_i,
+    password: ENV["MPD_PASSWORD"],
     fifo: ENV["MPD_FIFO"] || "/var/lib/mpd/tmp/trcc.fifo"
   },
   mumble: {
@@ -45,6 +46,7 @@ class MumbleMPD
     # add_mpd_callbacks
 
     @mpd.connect
+    @mpd.password(CONFIG[:mpd][:password]) if CONFIG[:mpd][:password]
 
     @mpd.play if @mpd.stopped?
   end

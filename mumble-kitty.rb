@@ -13,6 +13,7 @@ CONFIG = {
   mpd: {
     host: ENV["MPD_HOST"] || "localhost",
     port: (ENV["MPD_PORT"] || "6604").to_i,
+    password: ENV["MPD_PASSWORD"],
     fifo: ENV["MPD_FIFO"] || "/var/lib/mpd/tmp/kitty.fifo"
   },
   mumble: {
@@ -46,6 +47,7 @@ class MumbleMPD
     @cli.player.stream_named_pipe(CONFIG[:mpd][:fifo])
 
     @mpd.connect
+    @mpd.password(CONFIG[:mpd][:password]) if CONFIG[:mpd][:password]
 
     @cli.on_text_message do |msg|
       text = msg.message.downcase
