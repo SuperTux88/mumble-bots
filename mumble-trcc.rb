@@ -5,6 +5,9 @@ require "mumble-ruby"
 require "eventmachine"
 require "ruby-mpd"
 
+STDOUT.sync = true
+STDERR.sync = true
+
 CONFIG = {
   mpd: {
     host: ENV["MPD_HOST"] || "localhost",

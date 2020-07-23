@@ -4,6 +4,9 @@
 require "mumble-ruby"
 require "eventmachine"
 
+STDOUT.sync = true
+STDERR.sync = true
+
 CONFIG = {
   mpd: {
     fifo: ENV["MPD_FIFO"] || "/var/lib/mpd/tmp/kamin.fifo",

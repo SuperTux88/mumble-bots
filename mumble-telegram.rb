@@ -8,6 +8,9 @@ require "eventmachine"
 require "json"
 require "twitter-text"
 
+STDOUT.sync = true
+STDERR.sync = true
+
 CONFIG = {
   mumble: {
     host: ENV["MUMBLE_HOST"] || "mumble.coding4.coffee",

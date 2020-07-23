@@ -6,6 +6,9 @@ require "eventmachine"
 require "ruby-mpd"
 require "thread"
 
+STDOUT.sync = true
+STDERR.sync = true
+
 CONFIG = {
   general: {
     triggers: (ENV["TRIGGERS"] || "catnip,flausch,keks,minze").split(",")
