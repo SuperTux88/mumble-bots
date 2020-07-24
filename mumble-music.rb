@@ -28,6 +28,7 @@ class MumbleMPD
     @mpd = MPD.new(
       CONFIG[:mpd][:host],
       CONFIG[:mpd][:port],
+      password: CONFIG[:mpd][:password],
       callbacks: true
     )
 
@@ -47,7 +48,6 @@ class MumbleMPD
     add_mpd_callbacks
 
     @mpd.connect
-    @mpd.password(CONFIG[:mpd][:password]) if CONFIG[:mpd][:password]
 
     @mpd.play if @mpd.stopped?
   end
