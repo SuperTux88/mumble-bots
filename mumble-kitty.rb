@@ -31,8 +31,7 @@ class MumbleMPD
   def initialize
     @mpd = MPD.new(
       CONFIG[:mpd][:host],
-      CONFIG[:mpd][:port],
-      password: CONFIG[:mpd][:password]
+      CONFIG[:mpd][:port]
     )
 
     @cli = Mumble::Client.new(
@@ -51,6 +50,7 @@ class MumbleMPD
     @cli.player.stream_named_pipe(CONFIG[:mpd][:fifo])
 
     @mpd.connect
+    @mpd.password(CONFIG[:mpd][:password]) if CONFIG[:mpd][:password]
 
     @cli.on_text_message do |msg|
       text = msg.message.downcase
@@ -71,7 +71,7 @@ class MumbleMPD
             puts "#{Time.new.ctime}: #{newChannel.name}"
             @cli.join_channel(newChannel)
             5.times do
-              @mpd.play
+              play_next
               sleep(60)
             end
           end
@@ -79,7 +79,7 @@ class MumbleMPD
             puts "#{Time.new.ctime}: sleep in #{CONFIG[:mumble][:channel]}"
             @cli.join_channel(CONFIG[:mumble][:channel])
             24.times do
-              @mpd.play
+              play_next
               sleep(300)
             end
           else
@@ -90,6 +90,16 @@ class MumbleMPD
       end
     rescue Interrupt => e
     end
+  end
+
+  def play_next
+    @mpd.play
+  rescue MPD::Error => e
+    puts "MPD error: '#{e.inspect}'"
+    puts "Backtrace:\n\t#{e.backtrace.join("\n\t")}"
+    # retry after re-auth
+    @mpd.password(CONFIG[:mpd][:password]) if CONFIG[:mpd][:password]
+    retry
   end
 end
 
