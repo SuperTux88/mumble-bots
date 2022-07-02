@@ -106,7 +106,7 @@ class MumbleTelegram
     log "Sending to Telegram: #{params.inspect}"
     telegram_api("sendMessage", params)
     log "... done."
-  rescue SocketError, RestClient::Exception => e
+  rescue SocketError, RestClient::Exception, Errno::ECONNRESET => e
     log "... Telegram send error: '#{e.inspect}'"
   end
 
