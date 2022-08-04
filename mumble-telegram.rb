@@ -117,6 +117,8 @@ class MumbleTelegram
     response["result"].each do |data|
       @update_options[:offset] = data["update_id"].next
       message = data["message"]
+      next unless message
+
       puts "Received message: #{message}"
 
       send_list(message["chat"]["id"]) if message["text"] && message["text"].start_with?("/list")
