@@ -130,7 +130,7 @@ class MumbleTelegram
         play_voice(message["voice"])
       end
     end
-  rescue => e
+  rescue SocketError, RestClient::Exception, Errno::ECONNRESET => e
     log "... Telegram read error: '#{e.inspect}'"
     puts "Backtrace:\n\t#{e.backtrace.join("\n\t")}"
     sleep(1) # don't DoS API if there is a bug in the code
