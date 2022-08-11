@@ -106,12 +106,19 @@ class MumbleTelegram
     log "Sending to Telegram: #{params.inspect}"
     telegram_api("sendMessage", params)
     log "... done."
-  rescue SocketError, RestClient::Exception, Errno::ECONNRESET => e
+  rescue => e
     log "... Telegram send error: '#{e.inspect}'"
   end
 
   def fetch_updates_from_telegram
-    response = JSON.parse(telegram_api("getUpdates", @update_options))
+    begin
+      response = JSON.parse(telegram_api("getUpdates", @update_options))
+    rescue => e
+      log "... Telegram fetch error: '#{e.inspect}'"
+      puts "Backtrace:\n\t#{e.backtrace.join("\n\t")}"
+      sleep(1) # if telegram is down, wait a bit before trying again
+      return
+    end
     return unless response["ok"]
 
     response["result"].each do |data|
@@ -132,10 +139,6 @@ class MumbleTelegram
         play_voice(message["voice"])
       end
     end
-  rescue SocketError, RestClient::Exception, Errno::ECONNRESET => e
-    log "... Telegram read error: '#{e.inspect}'"
-    puts "Backtrace:\n\t#{e.backtrace.join("\n\t")}"
-    sleep(1) # don't DoS API if there is a bug in the code
   end
 
   def telegram_name(from)
@@ -157,10 +160,16 @@ class MumbleTelegram
   end
 
   def play_voice(voice)
-    response = JSON.parse(telegram_api("getFile", { file_id: voice["file_id"] }))
-    return unless response["ok"]
+    begin
+      response = JSON.parse(telegram_api("getFile", { file_id: voice["file_id"] }))
+      return unless response["ok"]
 
-    downloaded_file = telegram_download_file(response["result"]["file_path"])
+      downloaded_file = telegram_download_file(response["result"]["file_path"])
+    rescue => e
+      log "... Telegram get file error: '#{e.inspect}'"
+      puts "Backtrace:\n\t#{e.backtrace.join("\n\t")}"
+      return
+    end
 
     return unless system("ffmpeg -i #{downloaded_file} -ac 1 -ar 48000 -acodec pcm_s16le -y /tmp/telegram-voice.wav")
     File.delete(downloaded_file) if File.exist?(downloaded_file)
