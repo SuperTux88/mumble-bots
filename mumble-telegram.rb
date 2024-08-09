@@ -72,7 +72,8 @@ class MumbleTelegram
 
     @cli.on_text_message do |msg|
       if (!msg.channel_id || msg.channel_id.include?(@cli.me.channel_id)) &&
-          @cli.users[msg.actor] && !msg.message.include?("<img ") && !msg.message.start_with?(".")
+          @cli.users[msg.actor] && !msg.message.include?("<img ") && !msg.message.start_with?(".") &&
+          !CONFIG[:mumble][:ignored_users].include?(@cli.users[msg.actor].name)
         send_to_telegram("<b>#{@cli.users[msg.actor].name}:</b> #{msg.message}")
       end
     end
