@@ -78,7 +78,11 @@ class MumbleTelegram
       end
     end
 
-    loop { fetch_updates_from_telegram }
+    # mumble-ruby sets Thread.abort_on_exception, so errors in its reader and ping
+    # threads (e.g. a lost connection) are raised in the main thread. Poll telegram
+    # in its own thread, so the rescue blocks around the telegram calls can't
+    # swallow them and the bot crashes and gets restarted.
+    Thread.new { loop { fetch_updates_from_telegram } }.join
   end
 
   private
